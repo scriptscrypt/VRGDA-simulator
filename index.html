@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRGDA Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="theme-switch-wrapper">
+                <label class="theme-switch" for="checkbox">
+                    <div class="slider-icons">
+                        <i class="fas fa-sun"></i>
+                        <i class="fas fa-moon"></i>
+                    </div>
+                    <input type="checkbox" id="checkbox" />
+                    <div class="slider"></div>
+                </label>
+            </div>
+            <div class="logo">
+                <h1>VRGDA Simulator</h1>
+            </div>
+            <div class="subtitle">
+                <p>Variable Rate Gradual Dutch Auction Simulator</p>
+            </div>
+        </header>
+
+        <main>
+            <div class="intro-section">
+                <div class="intro-content">
+                    <h2>Understand Variable Rate Gradual Dutch Auctions</h2>
+                    <p>This simulator helps you visualize and experiment with VRGDA mechanics. VRGDAs are designed to sell tokens at a target rate over time, with the price dynamically adjusting based on demand.</p>
+                    <div class="key-features">
+                        <div class="feature">
+                            <span class="feature-icon">📊</span>
+                            <span class="feature-text">Dynamic pricing based on supply and demand</span>
+                        </div>
+                        <div class="feature">
+                            <span class="feature-icon">⏱️</span>
+                            <span class="feature-text">Target rate mechanism for controlled distribution</span>
+                        </div>
+                        <div class="feature">
+                            <span class="feature-icon">📈</span>
+                            <span class="feature-text">Price increases when sales are above target</span>
+                        </div>
+                        <div class="feature">
+                            <span class="feature-icon">📉</span>
+                            <span class="feature-text">Price decreases when sales are below target</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="simulator-section">
+                <h2>Simulation Environment</h2>
+                
+                <div class="scenario-selector">
+                    <h3>Select a Scenario</h3>
+                    <div class="simulation-scenarios">
+                        <div class="scenario-card" id="scenario-normal">
+                            <div class="scenario-icon">🎯</div>
+                            <h4>Standard Auction</h4>
+                            <p>Sales follow target rate</p>
+                        </div>
+                        <div class="scenario-card" id="scenario-slow">
+                            <div class="scenario-icon">🐢</div>
+                            <h4>Slow Start</h4>
+                            <p>Initially below target</p>
+                        </div>
+                        <div class="scenario-card" id="scenario-fast">
+                            <div class="scenario-icon">🚀</div>
+                            <h4>Demand Surge</h4>
+                            <p>Sales exceed target</p>
+                        </div>
+                        <div class="scenario-card" id="scenario-volatile">
+                            <div class="scenario-icon">🎢</div>
+                            <h4>Volatile Market</h4>
+                            <p>High/low demand periods</p>
+                        </div>
+                        <div class="scenario-card" id="scenario-longterm">
+                            <div class="scenario-icon">📆</div>
+                            <h4>Long-Term (30d)</h4>
+                            <p>Extended auction period</p>
+                        </div>
+                        <div class="scenario-card" id="scenario-custom">
+                            <div class="scenario-icon">⚙️</div>
+                            <h4>Custom Settings</h4>
+                            <p>Configure parameters</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="simulator-container">
+                    <div class="chart-container">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                    <div class="controls-container">
+                        <div class="control-group">
+                            <label for="targetRate">Target Sale Rate (tokens/day):</label>
+                            <input type="number" id="targetRate" min="100" max="100000" value="10000">
+                        </div>
+                        <div class="control-group">
+                            <label for="initialPrice">Initial Token Price (SOL):</label>
+                            <input type="number" id="initialPrice" min="0.0001" max="10" step="0.0001" value="0.1">
+                        </div>
+                        <div class="control-group">
+                            <label for="decayRate">Decay Constant:</label>
+                            <input type="range" id="decayRate" min="0.5" max="1.5" step="0.01" value="0.9">
+                            <div class="range-labels">
+                                <span>0.5 (Faster decay)</span>
+                                <span>1.5 (Slower decay)</span>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label for="salesVariation">Sales Variation Factor:</label>
+                            <input type="range" id="salesVariation" min="0.1" max="2.0" step="0.1" value="1.0">
+                            <div class="range-labels">
+                                <span>0.1 (Below target)</span>
+                                <span>2.0 (Above target)</span>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label for="simulationDays">Simulation Duration (days):</label>
+                            <input type="number" id="simulationDays" min="1" max="30" value="7">
+                        </div>
+                        <div class="control-group">
+                            <label for="totalTokens">Total Tokens:</label>
+                            <input type="number" id="totalTokens" min="1000" max="1000000" value="70000">
+                        </div>
+                        <button id="runSimulation" class="btn-simulate">Run Simulation</button>
+                        
+                        <div class="simulation-status">
+                            <div class="status-item">
+                                <span class="label">Current Day:</span>
+                                <span class="value" id="currentDay">-</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="label">Current Price:</span>
+                                <span class="value" id="currentPrice">-</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="label">Tokens Sold:</span>
+                                <span class="value" id="tokensSold">-</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="label">Target Sales:</span>
+                                <span class="value" id="targetSales">-</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="label">Actual Sales:</span>
+                                <span class="value" id="actualSales">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chart-selection">
+                    <h3>Additional Charts</h3>
+                    <div class="chart-tabs">
+                        <button class="chart-tab active" data-chart="price">Price Dynamics</button>
+                        <button class="chart-tab" data-chart="sales">Sales Rate</button>
+                        <button class="chart-tab" data-chart="cumulative">Cumulative Sales</button>
+                        <button class="chart-tab" data-chart="revenue">Revenue</button>
+                    </div>
+                    <div class="secondary-chart-container">
+                        <canvas id="secondaryChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="buyer-activity">
+                    <h3>Simulated Orderbook Activity</h3>
+                    <div class="orderbook-container">
+                        <div class="orderbook-half orderbook-buy">
+                            <h4>Buy Orders</h4>
+                            <div class="orderbook-entries" id="buyOrders">
+                                <div class="orderbook-entry header">
+                                    <div class="price">Price (SOL)</div>
+                                    <div class="time">Time</div>
+                                    <div class="amount">Amount</div>
+                                </div>
+                                <!-- Buy orders will be inserted here by JavaScript -->
+                            </div>
+                        </div>
+                        <div class="orderbook-half orderbook-sell">
+                            <h4>Sell Orders</h4>
+                            <div class="orderbook-entries" id="sellOrders">
+                                <div class="orderbook-entry header">
+                                    <div class="price">Price (SOL)</div>
+                                    <div class="time">Time</div>
+                                    <div class="amount">Amount</div>
+                                </div>
+                                <!-- Sell orders will be inserted here by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="formula-section">
+                <h2>VRGDA Formula Explained</h2>
+                <div class="formula-container">
+                    <div class="formula">
+                        <h3>Core Formula</h3>
+                        <div class="formula-display">
+                            <p>price = targetPrice × decay<sup>(timeSinceStart - targetSaleTime)</sup></p>
+                        </div>
+                        <div class="formula-explanation">
+                            <p><strong>targetPrice</strong>: The initial price of the token</p>
+                            <p><strong>decay</strong>: A constant that determines how quickly price changes (typically 0.5-1.5)</p>
+                            <p><strong>timeSinceStart</strong>: Current time elapsed since auction began</p>
+                            <p><strong>targetSaleTime</strong>: When the token should have been sold according to the target rate</p>
+                        </div>
+                    </div>
+                    <div class="formula-behavior">
+                        <h3>Price Behavior</h3>
+                        <div class="behavior-item">
+                            <div class="behavior-icon">📉</div>
+                            <p><strong>If Sales < Target:</strong> timeSinceStart > targetSaleTime, resulting in a positive exponent and lower price</p>
+                        </div>
+                        <div class="behavior-item">
+                            <div class="behavior-icon">📈</div>
+                            <p><strong>If Sales > Target:</strong> timeSinceStart < targetSaleTime, resulting in a negative exponent and higher price</p>
+                        </div>
+                        <div class="behavior-item">
+                            <div class="behavior-icon">🎯</div>
+                            <p><strong>If Sales = Target:</strong> timeSinceStart = targetSaleTime, resulting in price = targetPrice × decay<sup>0</sup> = targetPrice</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="examples-section">
+                <h2>Real-World Applications</h2>
+                <div class="examples-container">
+                    <div class="example-card">
+                        <h3>NFT Collections</h3>
+                        <p>VRGDA can distribute NFTs at a fair price that adjusts based on demand, preventing gas wars and allowing for smoother releases.</p>
+                    </div>
+                    <div class="example-card">
+                        <h3>Token Launches</h3>
+                        <p>Fair token launches that distribute tokens over time rather than in a single event, reducing price volatility.</p>
+                    </div>
+                    <div class="example-card">
+                        <h3>Fundraising</h3>
+                        <p>Projects can raise funds at a rate that matches their needs, ensuring efficient capital deployment.</p>
+                    </div>
+                    <div class="example-card">
+                        <h3>Gaming Assets</h3>
+                        <p>In-game items can be sold at prices that reflect their actual demand and scarcity.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>VRGDA Simulator - An interactive tool for understanding Variable Rate Gradual Dutch Auctions</p>
+            <p>Based on <a href="https://www.paradigm.xyz/2022/08/vrgda" target="_blank">Paradigm's VRGDA research</a></p>
+        </footer>
+    </div>
+
+    <script src="simulator.js"></script>
+</body>
+</html> 
