@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const runSimulationBtn = document.getElementById('runSimulation');
     const buyOrders = document.getElementById('buyOrders');
     const sellOrders = document.getElementById('sellOrders');
+    const resetZoomBtn = document.getElementById('resetZoom');
     
     // Theme toggle
     const themeToggle = document.getElementById('checkbox');
@@ -159,7 +160,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     zoom: {
                         pan: {
                             enabled: true,
-                            mode: 'x'
+                            mode: 'x',
+                            onPan: updatePurchaseMarkersOnZoom
                         },
                         zoom: {
                             wheel: {
@@ -169,6 +171,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 enabled: true
                             },
                             mode: 'x',
+                            onZoom: updatePurchaseMarkersOnZoom
+                        },
+                        limits: {
+                            x: {min: 'original', max: 'original'},
+                            y: {min: 'original', max: 'original'}
                         }
                     }
                 },
@@ -200,7 +207,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 },
                 animation: {
-                    duration: 1000
+                    duration: 1000,
+                    onComplete: function() {
+                        // Refresh purchase markers after animation is complete
+                        if (simulationData && simulationData.purchaseEvents) {
+                            updatePurchaseMarkers(simulationData.purchaseEvents);
+                        }
+                    }
                 }
             }
         });
@@ -922,23 +935,17 @@ document.addEventListener('DOMContentLoaded', function() {
         priceChart.data.datasets[0].data = filteredTargetPrices;
         priceChart.data.datasets[1].data = filteredActualPrices;
         
-        // Add purchase markers
+        // Clear any existing markers
+        clearPurchaseMarkers();
+        
+        // Update chart with or without animation
         if (animate) {
             priceChart.update();
-            
-            // Clear previous purchase markers
-            document.querySelectorAll('.purchase-marker').forEach(marker => marker.remove());
-            
-            // Add purchase markers with delay
-            setTimeout(() => {
-                data.purchaseEvents.forEach((purchase, index) => {
-                    setTimeout(() => {
-                        addPurchaseMarker(purchase);
-                    }, index * 300);
-                });
-            }, 1000);
+            // Purchase markers will be added after animation completes via the onComplete callback
         } else {
             priceChart.update('none');
+            // Add purchase markers immediately
+            updatePurchaseMarkers(data.purchaseEvents, false);
         }
     }
     
@@ -1036,6 +1043,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Function to update purchase markers when zooming or panning
+    function updatePurchaseMarkersOnZoom() {
+        if (simulationData && simulationData.purchaseEvents) {
+            // Clear and redraw all purchase markers with current zoom level
+            clearPurchaseMarkers();
+            updatePurchaseMarkers(simulationData.purchaseEvents, false);
+            
+            // Show reset zoom button when zoomed
+            resetZoomBtn.style.display = 'block';
+        }
+    }
+
+    // Clear all purchase markers
+    function clearPurchaseMarkers() {
+        document.querySelectorAll('.purchase-marker, .price-tick').forEach(marker => marker.remove());
+    }
+
+    // Update purchase markers based on current chart state
+    function updatePurchaseMarkers(purchaseEvents, animate = true) {
+        clearPurchaseMarkers();
+        
+        if (animate) {
+            setTimeout(() => {
+                purchaseEvents.forEach((purchase, index) => {
+                    setTimeout(() => {
+                        addPurchaseMarker(purchase);
+                    }, index * 300);
+                });
+            }, 1000);
+        } else {
+            purchaseEvents.forEach(purchase => {
+                addPurchaseMarker(purchase);
+            });
+        }
+    }
+    
     // Add purchase marker on the chart
     function addPurchaseMarker(purchase) {
         const timeIndex = (purchase.time.day - 1) * hoursPerDay + purchase.time.hour;
@@ -1049,6 +1092,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (meta.data[dataIndex]) {
             const x = meta.data[dataIndex].x;
             const y = meta.data[dataIndex].y;
+            
+            // Check if the marker would be within the visible chart area
+            const chartArea = chart.chartArea;
+            if (x < chartArea.left || x > chartArea.right || y < chartArea.top || y > chartArea.bottom) {
+                // Skip markers outside visible area
+                return;
+            }
             
             // Create marker element
             const marker = document.createElement('div');
@@ -1075,11 +1125,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Show a price tick on the chart
     function showPriceTick(x, y, price) {
+        const chartArea = priceChart.chartArea;
+        
+        // Skip if outside visible area
+        if (x < chartArea.left || x > chartArea.right || y < chartArea.top || y > chartArea.bottom) {
+            return;
+        }
+        
         const tick = document.createElement('div');
         tick.className = 'price-tick';
         tick.textContent = `${price.toFixed(4)} SOL`;
         tick.style.left = `${x}px`;
         tick.style.top = `${y - 25}px`;
+        
+        // Ensure the tick doesn't go off the top of the chart
+        if (parseFloat(tick.style.top) < chartArea.top) {
+            tick.style.top = `${chartArea.top}px`;
+        }
         
         document.querySelector('.chart-container').appendChild(tick);
         
@@ -1400,6 +1462,20 @@ document.addEventListener('DOMContentLoaded', function() {
             setActiveScenario(scenarioCustom);
             currentActiveScenario = 'custom';
         });
+    });
+    
+    // Reset zoom button event listener
+    resetZoomBtn.addEventListener('click', function() {
+        if (priceChart) {
+            priceChart.resetZoom();
+            this.style.display = 'none';
+            
+            // Reset purchase markers
+            if (simulationData && simulationData.purchaseEvents) {
+                clearPurchaseMarkers();
+                updatePurchaseMarkers(simulationData.purchaseEvents, false);
+            }
+        }
     });
     
     // Initialize the simulator

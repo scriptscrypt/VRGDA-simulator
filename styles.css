@@ -305,6 +305,7 @@ input:checked + .slider:before {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     height: 450px;
     position: relative;
+    overflow: hidden;
 }
 
 .controls-container {
@@ -528,6 +529,9 @@ input:checked + .slider:before {
     border-radius: 0.25rem;
     position: absolute;
     animation: fadein 0.5s;
+    z-index: 20;
+    pointer-events: none;
+    white-space: nowrap;
 }
 
 @keyframes fadein {
@@ -542,7 +546,9 @@ input:checked + .slider:before {
     border-radius: 50%;
     background-color: var(--success-color);
     transform: translate(-50%, -50%);
-    z-index: 10;
+    z-index: 20;
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 /* Formula Section */
@@ -684,4 +690,32 @@ footer a {
 
 footer a:hover {
     text-decoration: underline;
+}
+
+.btn-reset-zoom {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--primary-color);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    z-index: 10;
+    opacity: 0.8;
+    transition: opacity 0.2s, background-color 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-reset-zoom:hover {
+    opacity: 1;
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Hide reset button initially */
+.btn-reset-zoom {
+    display: none;
 } 
